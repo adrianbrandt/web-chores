@@ -16,8 +16,13 @@ import { JSX } from 'react';
 
 // Private route component
 function RequireAuth({ children }: { children: JSX.Element }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+
+  // Show loading state
+  if (isLoading) {
+    return <div>Loading...</div>; // Or your loading component
+  }
 
   if (!isAuthenticated) {
     // Redirect to login page if not authenticated

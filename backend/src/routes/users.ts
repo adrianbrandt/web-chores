@@ -4,8 +4,9 @@ import {
   createUser,
   getUserById,
   loginUser,
-  getAllUsers
+  getAllUsers, logoutUser, getCurrentUser,
 } from '../controllers/userController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -14,6 +15,11 @@ router.post('/register', createUser);
 
 // Login
 router.post('/login', loginUser);
+
+router.post('/logout', logoutUser);
+
+router.get('/me', authenticateToken, getCurrentUser);
+
 
 // Get user by ID
 router.get('/:id', getUserById);

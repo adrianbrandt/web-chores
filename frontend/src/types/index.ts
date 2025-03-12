@@ -8,7 +8,7 @@ export interface User {
 }
 
 export interface AuthUser extends User {
-  token: string;
+  token?: string;
 }
 
 export interface LoginCredentials {

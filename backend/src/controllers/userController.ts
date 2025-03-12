@@ -1,8 +1,16 @@
 // backend/src/controllers/userController.ts
-import { Request, Response } from 'express';
+import { CookieOptions, Request, Response } from 'express';
 import prisma from '../utils/prisma';
 import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
+
+const cookieOptions: CookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production', // Only use HTTPS in production
+  sameSite: 'strict',
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  path: '/'
+};
 
 // Create a new user
 export const createUser = async (req: Request, res: Response) => {
@@ -12,6 +20,7 @@ export const createUser = async (req: Request, res: Response) => {
     // Validate input
     if (!name || !email || !password) {
       res.status(400).json({ message: 'Name, email and password are required' });
+      return;
     }
 
     // Check if user already exists
@@ -21,6 +30,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     if (existingUser) {
       res.status(400).json({ message: 'User with this email already exists' });
+      return;
     }
 
     // Hash password
@@ -42,13 +52,13 @@ export const createUser = async (req: Request, res: Response) => {
       { expiresIn: '24h' }
     );
 
-    // user without password
+    // Set the token in a cookie
+    res.cookie('auth_token', token, cookieOptions);
+
+    // Return user without password and without token in body
     const { password: _, ...userWithoutPassword } = user;
 
-    res.status(201).json({
-      ...userWithoutPassword,
-      token,
-    });
+    res.status(201).json(userWithoutPassword);
   } catch (error) {
     console.error('Error creating user:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -90,12 +100,13 @@ export const loginUser = async (req: Request, res: Response) => {
       { expiresIn: '24h' }
     );
 
+    res.cookie('auth_token', token, cookieOptions);
+
     // user without password
     const { password: _, ...userWithoutPassword } = user;
 
     res.status(200).json({
-      ...userWithoutPassword,
-      token,
+      ...userWithoutPassword
     });
   } catch (error) {
     console.error('Error logging in:', error);
@@ -146,4 +157,50 @@ export const getAllUsers = async (_req: Request, res: Response) => {
     console.error('Error getting users:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+// In backend/src/controllers/userController.ts
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    if (!user) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// In routes/users.ts
+
+export const logoutUser = async (req: Request, res: Response) => {
+  res.clearCookie('auth_token', {
+    httpOnly: true,
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+
+  res.status(200).json({ message: 'Logged out successfully' });
 };

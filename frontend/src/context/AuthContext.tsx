@@ -1,52 +1,62 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AuthUser } from '../types';
+import { User } from '../types';
+import api from '../services/api';
 
 interface AuthContextType {
-  user: AuthUser | null;
-  setUser: (user: AuthUser | null) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
   isAuthenticated: boolean;
   logout: () => void;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Check authentication status on mount
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    const checkAuthStatus = async () => {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+        // Make a request to an endpoint that requires authentication
+        const response = await api.get<User>('/users/me');
+        setUser(response.data);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error('Failed to parse stored user:', error);
-        localStorage.removeItem('user');
+        // If the request fails, the user is not authenticated
+        setUser(null);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    checkAuthStatus();
   }, []);
 
-  useEffect(() => {
-    // Store user in localStorage when it changes
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-      setIsAuthenticated(true);
-    } else {
-      localStorage.removeItem('user');
+  const logout = async () => {
+    try {
+      await api.post('/users/logout');
+      setUser(null);
       setIsAuthenticated(false);
+    } catch (error) {
+      console.error('Logout error:', error);
     }
-  }, [user]);
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, isAuthenticated, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        isAuthenticated,
+        logout,
+        isLoading
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

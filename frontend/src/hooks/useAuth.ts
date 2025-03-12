@@ -1,14 +1,15 @@
 import { useMutation } from '@tanstack/react-query';
 import api from '../services/api';
-import { LoginCredentials, RegisterCredentials, AuthUser } from '../types';
+import { LoginCredentials, RegisterCredentials, User } from '../types';
 import { useAuth } from '../context/AuthContext';
 
+// In frontend/src/hooks/useAuth.ts
 export function useLogin() {
   const { setUser } = useAuth();
 
   return useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await api.post<AuthUser>('/users/login', credentials);
+      const response = await api.post<User>('/users/login', credentials);
       return response.data;
     },
     onSuccess: (data) => {
@@ -22,7 +23,7 @@ export function useRegister() {
 
   return useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
-      const response = await api.post<AuthUser>('/users/register', credentials);
+      const response = await api.post<User>('/users/register', credentials);
       return response.data;
     },
     onSuccess: (data) => {

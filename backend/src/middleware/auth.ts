@@ -11,10 +11,10 @@ declare global {
   }
 }
 
+// In backend/src/middleware/auth.ts
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  // Get token from Authorization header
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // "Bearer TOKEN"
+  // Get token from cookie instead of Authorization header
+  const token = req.cookies.auth_token;
 
   if (!token) {
     res.status(401).json({ message: 'Authentication required' });
