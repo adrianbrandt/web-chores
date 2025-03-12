@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String          @unique
+  name          String
+  password      String
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  chores        Chore[]
+  lists         List[]
+  ChoreInstance ChoreInstance[]
+
+  @@map("users")
+}
+
+model Chore {
+  id          Int             @id @default(autoincrement())
+  title       String
+  description String?
+  frequency   String // daily, weekly, monthly
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  createdBy   Int             @map("created_by")
+  user        User            @relation(fields: [createdBy], references: [id])
+  instances   ChoreInstance[]
+
+  @@map("chores")
+}
+
+model ChoreInstance {
+  id          Int       @id @default(autoincrement())
+  choreId     Int       @map("chore_id")
+  userId      Int       @map("user_id")
+  dueDate     DateTime  @map("due_date")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  chore Chore @relation(fields: [choreId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@map("chore_instances")
+}
+
+model List {
+  id        Int         @id @default(autoincrement())
+  title     String
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  createdBy Int         @map("created_by")
+  user      User        @relation(fields: [createdBy], references: [id])
+  items     ListItem[]
+  shared    ListShare[]
+
+  @@map("lists")
+}
+
+model ListItem {
+  id        Int      @id @default(autoincrement())
+  listId    Int      @map("list_id")
+  content   String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  list      List     @relation(fields: [listId], references: [id])
+
+  @@map("list_items")
+}
+
+model ListShare {
+  id     Int  @id @default(autoincrement())
+  listId Int  @map("list_id")
+  userId Int  @map("user_id")
+  list   List @relation(fields: [listId], references: [id])
+
+  @@unique([listId, userId])
+  @@map("list_shares")
+}
