@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useChore, useChoreInstances, useCompleteChoreInstance, useDeleteChore, useUpdateChore } from '../hooks/useChores';
 import AppLayout from '../components/layout/AppLayout';
+import { isBefore, format } from 'date-fns';
 
 const ChoreDetails = () => {
   const { id } = useParams();
@@ -59,7 +60,17 @@ const ChoreDetails = () => {
     ? chore.instances[0]
     : null;
 
-  const handleComplete = async (instanceId: number) => {
+  const handleComplete = async (instanceId: number, dueDate: string) => {
+    // Check if the chore is in the future
+    const today = new Date();
+    const choreDate = new Date(dueDate);
+
+    // Only allow completing chores that are due today or in the past
+    if (!isBefore(choreDate, today) && choreDate.toDateString() !== today.toDateString()) {
+      alert('You cannot complete future chores! This chore is not yet due.');
+      return;
+    }
+
     try {
       await completeChore.mutateAsync(instanceId);
     } catch (error) {
@@ -94,6 +105,15 @@ const ChoreDetails = () => {
       console.error('Failed to update chore:', error);
     }
   };
+
+  // Calculate completion percentage for history chart
+  const calculateCompletionPercentage = () => {
+    if (!instances || instances.length === 0) return 0;
+    const completedInstances = instances.filter(instance => instance.completedAt);
+    return Math.round((completedInstances.length / instances.length) * 100);
+  };
+
+  const completionPercentage = calculateCompletionPercentage();
 
   return (
     <AppLayout>
@@ -201,22 +221,27 @@ const ChoreDetails = () => {
 
               <div className="meta-item">
                 <span className="meta-label">Created:</span>
-                <span className="meta-value">{new Date(chore.createdAt).toLocaleDateString()}</span>
+                <span className="meta-value">{format(new Date(chore.createdAt), 'MMM d, yyyy')}</span>
               </div>
 
               {latestInstance && (
                 <div className="meta-item">
                   <span className="meta-label">Next Due:</span>
-                  <span className="meta-value">{new Date(latestInstance.dueDate).toLocaleDateString()}</span>
+                  <span className="meta-value">{format(new Date(latestInstance.dueDate), 'MMM d, yyyy')}</span>
                 </div>
               )}
+
+              <div className="meta-item">
+                <span className="meta-label">Completion Rate:</span>
+                <span className="meta-value">{completionPercentage}%</span>
+              </div>
             </div>
 
             {latestInstance && !latestInstance.completedAt && (
               <div className="chore-actions">
                 <button
                   className="complete-button"
-                  onClick={() => handleComplete(latestInstance.id)}
+                  onClick={() => handleComplete(latestInstance.id, latestInstance.dueDate)}
                   disabled={completeChore.isPending}
                 >
                   {completeChore.isPending ? 'Completing...' : 'Mark as Complete'}
@@ -229,29 +254,57 @@ const ChoreDetails = () => {
         <div className="history-section">
           <h2>History</h2>
 
+          <div className="completion-chart">
+            <div className="chart-label">Overall Completion</div>
+            <div className="progress-container">
+              <div className="progress-bar">
+                <div className="progress" style={{ width: `${completionPercentage}%` }}></div>
+              </div>
+              <div className="progress-percentage">{completionPercentage}%</div>
+            </div>
+          </div>
+
           {instances?.length ? (
             <div className="history-list">
-              {instances.map(instance => (
-                <div key={instance.id} className="history-item">
-                  <div className="history-date">
-                    <div className="date-label">Due:</div>
-                    <div className="date-value">{new Date(instance.dueDate).toLocaleDateString()}</div>
-                  </div>
+              {instances.map(instance => {
+                const isCompleted = instance.completedAt;
+                const isPastDue = !isCompleted && isBefore(new Date(instance.dueDate), new Date()) &&
+                  new Date(instance.dueDate).toDateString() !== new Date().toDateString();
 
-                  <div className="history-status">
-                    {instance.completedAt ? (
-                      <>
-                        <div className="status-label completed">Completed</div>
-                        <div className="completion-date">
-                          {new Date(instance.completedAt).toLocaleDateString()}
+                return (
+                  <div key={instance.id} className={`history-item ${isPastDue ? 'past-due' : ''} ${isCompleted ? 'completed' : ''}`}>
+                    <div className="history-date">
+                      <div className="date-label">Due:</div>
+                      <div className="date-value">{format(new Date(instance.dueDate), 'MMM d, yyyy')}</div>
+                    </div>
+
+                    <div className="history-status">
+                      {isCompleted ? (
+                        <>
+                          <div className="status-label completed">Completed</div>
+                          <div className="completion-date">
+                            {format(new Date(instance.completedAt!), 'MMM d, yyyy')}
+                          </div>
+                        </>
+                      ) : (
+                        <div className={`status-label ${isPastDue ? 'past-due' : 'pending'}`}>
+                          {isPastDue ? 'Missed' : 'Pending'}
                         </div>
-                      </>
-                    ) : (
-                      <div className="status-label pending">Pending</div>
+                      )}
+                    </div>
+
+                    {!isCompleted && !isPastDue && (
+                      <button
+                        className="complete-instance-button"
+                        onClick={() => handleComplete(instance.id, instance.dueDate)}
+                        disabled={completeChore.isPending}
+                      >
+                        Complete
+                      </button>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <p>No history available yet.</p>
@@ -261,4 +314,4 @@ const ChoreDetails = () => {
     </AppLayout>
   );
 }
-export default ChoreDetails
+export default ChoreDetails;

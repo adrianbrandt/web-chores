@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLists, useSharedLists } from '../hooks/useLists';
 import AppLayout from '../components/layout/AppLayout';
 
-const Lists =()=> {
+const Lists = () => {
   const [view, setView] = useState<'my' | 'shared'>('my');
   const { data: myLists, isLoading: myListsLoading } = useLists();
   const { data: sharedLists, isLoading: sharedListsLoading } = useSharedLists();
@@ -15,7 +15,7 @@ const Lists =()=> {
     <AppLayout>
       <div className="lists-page">
         <div className="page-header">
-          <h1>Shopping Lists</h1>
+          <h1>Lists</h1>
           <Link to="/lists/new" className="header-action-button">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -79,7 +79,7 @@ const Lists =()=> {
           <div className="empty-state">
             {view === 'my' ? (
               <>
-                <p>You don't have any shopping lists yet.</p>
+                <p>You don't have any lists yet.</p>
                 <Link to="/lists/new" className="empty-action-button">Create a new list</Link>
               </>
             ) : (
@@ -91,4 +91,4 @@ const Lists =()=> {
     </AppLayout>
   );
 }
-  export default Lists;
+export default Lists;
