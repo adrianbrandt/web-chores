@@ -36,6 +36,7 @@ export const createList = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return
     }
 
     // Validate input
@@ -55,6 +56,7 @@ export const createList = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error creating list:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -83,6 +85,7 @@ export const getListById = async (req: Request, res: Response) => {
 
     if (!list) {
       res.status(404).json({ message: 'List not found' });
+      return
     }
 
     // Check if user is the creator or has shared access
@@ -90,12 +93,14 @@ export const getListById = async (req: Request, res: Response) => {
 
     if (list.createdBy !== userId && !isSharedWithUser) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     res.status(200).json(list);
   } catch (error) {
     console.error('Error getting list:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -106,6 +111,7 @@ export const getAllLists = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return
     }
 
     // Get user's lists
@@ -131,6 +137,7 @@ export const getAllLists = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error getting lists:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -143,6 +150,7 @@ export const updateList = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return
     }
 
     // Check if list exists and belongs to user
@@ -152,10 +160,12 @@ export const updateList = async (req: Request, res: Response) => {
 
     if (!existingList) {
       res.status(404).json({ message: 'List not found' });
+      return
     }
 
     if (existingList.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Update list
@@ -168,6 +178,7 @@ export const updateList = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating list:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -188,10 +199,12 @@ export const deleteList = async (req: Request, res: Response) => {
 
     if (!existingList) {
       res.status(404).json({ message: 'List not found' });
+      return
     }
 
     if (existingList.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Delete list shares first
@@ -213,6 +226,7 @@ export const deleteList = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting list:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -235,6 +249,7 @@ export const addListItem = async (req: Request, res: Response) => {
 
     if (!list) {
       res.status(404).json({ message: 'List not found' });
+      return
     }
 
     // Check if user is the creator or has shared access
@@ -242,6 +257,7 @@ export const addListItem = async (req: Request, res: Response) => {
 
     if (list.createdBy !== userId && !isSharedWithUser) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Add item to list
@@ -268,6 +284,7 @@ export const updateListItem = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return
     }
 
     // Get the item with its list
@@ -282,6 +299,7 @@ export const updateListItem = async (req: Request, res: Response) => {
 
     if (!item) {
       res.status(404).json({ message: 'Item not found' });
+      return
     }
 
     // Check if user is the creator or has shared access
@@ -301,6 +319,7 @@ export const updateListItem = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error updating list item:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -312,6 +331,7 @@ export const deleteListItem = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return
     }
 
     // Get the item with its list
@@ -326,6 +346,7 @@ export const deleteListItem = async (req: Request, res: Response) => {
 
     if (!item) {
       res.status(404).json({ message: 'Item not found' });
+      return
     }
 
     // Check if user is the creator or has shared access
@@ -344,6 +365,7 @@ export const deleteListItem = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting list item:', error);
     res.status(500).json({ message: 'Internal server error' });
+    return
   }
 };
 
@@ -355,6 +377,7 @@ export const toggleListItemCompletion = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return
     }
 
     // Get the item with its list
@@ -369,6 +392,7 @@ export const toggleListItemCompletion = async (req: Request, res: Response) => {
 
     if (!item) {
       res.status(404).json({ message: 'Item not found' });
+      return
     }
 
     // Check if user is the creator or has shared access
@@ -376,6 +400,7 @@ export const toggleListItemCompletion = async (req: Request, res: Response) => {
 
     if (item.list.createdBy !== userId && !isSharedWithUser) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Toggle item completion
@@ -409,10 +434,12 @@ export const shareList = async (req: Request, res: Response) => {
 
     if (!list) {
       res.status(404).json({ message: 'List not found' });
+      return
     }
 
     if (list.createdBy !== userId) {
       res.status(403).json({ message: 'Only the list creator can share it' });
+      return
     }
 
     // Find user by email
@@ -422,11 +449,13 @@ export const shareList = async (req: Request, res: Response) => {
 
     if (!userToShare) {
       res.status(404).json({ message: 'User not found' });
+      return
     }
 
     // Don't share with self
     if (userToShare.id === userId) {
       res.status(400).json({ message: 'Cannot share list with yourself' });
+      return
     }
 
     // Check if already shared
@@ -513,11 +542,13 @@ export const removeListShare = async (req: Request, res: Response) => {
 
     if (!list) {
       res.status(404).json({ message: 'List not found' });
+      return
     }
 
     // Only the list creator can remove shares
     if (list.createdBy !== currentUserId) {
       res.status(403).json({ message: 'Only the list creator can manage shares' });
+      return
     }
 
     // Delete the share

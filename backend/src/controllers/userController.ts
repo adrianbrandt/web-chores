@@ -73,12 +73,14 @@ export const loginUser = async (req: Request, res: Response) => {
     // Check if user exists
     if (!user) {
       res.status(401).json({ message: 'Invalid credentials' });
+      return
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       res.status(401).json({ message: 'Invalid credentials' });
+      return
     }
 
     // Generate token
@@ -113,6 +115,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
+      return
     }
 
     // user without password

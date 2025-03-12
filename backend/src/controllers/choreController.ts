@@ -11,6 +11,7 @@ export const createChore = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     // Validate input
@@ -58,6 +59,7 @@ export const getChoreById = async (req: Request, res: Response) => {
 
     if (!userId) {
       res.status(401).json({ message: 'Unauthorized' });
+      return;
     }
 
     const chore = await prisma.chore.findUnique({
@@ -76,10 +78,12 @@ export const getChoreById = async (req: Request, res: Response) => {
 
     if (!chore) {
       res.status(404).json({ message: 'Chore not found' });
+      return
     }
 
     if (chore.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     res.status(200).json(chore);
@@ -137,10 +141,12 @@ export const updateChore = async (req: Request, res: Response) => {
 
     if (!existingChore) {
       res.status(404).json({ message: 'Chore not found' });
+      return
     }
 
     if (existingChore.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Update chore
@@ -177,10 +183,12 @@ export const deleteChore = async (req: Request, res: Response) => {
 
     if (!existingChore) {
       res.status(404).json({ message: 'Chore not found' });
+      return
     }
 
     if (existingChore.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Delete all instances first (due to foreign key constraint)
@@ -217,10 +225,12 @@ export const getChoreInstances = async (req: Request, res: Response) => {
 
     if (!existingChore) {
       res.status(404).json({ message: 'Chore not found' });
+      return
     }
 
     if (existingChore.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Get chore instances
@@ -255,10 +265,12 @@ export const createChoreInstance = async (req: Request, res: Response) => {
 
     if (!existingChore) {
       res.status(404).json({ message: 'Chore not found' });
+      return
     }
 
     if (existingChore.createdBy !== currentUserId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Create chore instance
@@ -295,10 +307,12 @@ export const completeChoreInstance = async (req: Request, res: Response) => {
 
     if (!instance) {
       res.status(404).json({ message: 'Chore instance not found' });
+      return
     }
 
     if (instance.userId !== userId && instance.chore.createdBy !== userId) {
       res.status(403).json({ message: 'Access denied' });
+      return
     }
 
     // Update instance to completed
