@@ -196,3 +196,22 @@ export const ListErrors = {
     errorCode: 'LIST_MISSING_REQUIRED_FIELDS',
   }),
 };
+
+export const ServerErrors = {
+  MissingJwtSecret: (): ErrorParams => ({
+    message: 'JWT secret not configured',
+    errorCode: 'SERVER_MISSING_JWT_SECRET',
+  }),
+  DatabaseConnection: (): ErrorParams => ({
+    message: 'Database connection error',
+    errorCode: 'SERVER_DATABASE_CONNECTION_ERROR',
+  }),
+  InternalError: (details?: string): ErrorParams => ({
+    message: `Internal server error${details ? `: ${details}` : ''}`,
+    errorCode: 'SERVER_INTERNAL_ERROR',
+  }),
+  RateLimitExceed: (): ErrorParams => ({
+    message: 'Too many requests. Try again later.',
+    errorCode: 'RATE_LIMIT_EXCEEDED',
+  }),
+};

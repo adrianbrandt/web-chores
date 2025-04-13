@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import * as listService from '../services/listService';
 import logger from '../config/logger';
-import { Errors } from '@/utils/AppError';
-import { ListErrors } from '@/utils/errorCases';
 
 export const createList = async (req: Request, res: Response) => {
   const result = await listService.createList(req.context, req.body);

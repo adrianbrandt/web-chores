@@ -1,13 +1,15 @@
 import express from 'express';
 import request from 'supertest';
 import { authLimiter } from '@/middleware/limiter';
+import { ServerErrors } from '@/utils/errorCases';
 
 describe('authLimiter middleware', () => {
   let app: express.Express;
 
   beforeEach(() => {
     app = express();
-    app.use('/test', authLimiter, (req, res) => {
+    app.use('/test', authLimiter);
+    app.get('/test', (req, res) => {
       res.status(200).json({ message: 'Success' });
     });
   });
@@ -27,6 +29,6 @@ describe('authLimiter middleware', () => {
 
     const res = await request(app).get('/test');
     expect(res.status).toBe(429);
-    expect(res.body).toEqual({ message: 'Too many requests. Try again later.' });
+    expect(res.body).toEqual(ServerErrors.RateLimitExceed());
   });
 });

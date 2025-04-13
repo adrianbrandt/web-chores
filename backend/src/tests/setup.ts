@@ -21,8 +21,6 @@ export const mockContextToAppContext = (mockCtx: MockContext): AppContext => {
   return mockCtx as unknown as AppContext;
 };
 
-export const originalEnv = { ...process.env };
-
 beforeEach(() => {
   jest.resetModules();
   jest.clearAllMocks();
@@ -31,12 +29,5 @@ beforeEach(() => {
   (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
   (bcrypt.compare as jest.Mock).mockResolvedValue(true);
   (jwt.sign as jest.Mock).mockReturnValue('token');
-});
-
-afterAll(() => {
-  process.env = originalEnv;
-});
-
-afterEach(() => {
-  process.env = { ...originalEnv };
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 });

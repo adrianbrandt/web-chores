@@ -8,6 +8,25 @@ jest.mock('jsonwebtoken', () => ({
   verify: jest.fn(),
 }));
 
+jest.mock('@/utils/AppError', () => ({
+  Errors: {
+    Unauthorized: jest.fn().mockImplementation((params) => ({ ...params, statusCode: 401 })),
+    Forbidden: jest.fn().mockImplementation((params) => ({ ...params, statusCode: 403 })),
+    Internal: jest.fn(),
+  },
+}));
+
+jest.mock('@/utils/errorCases', () => ({
+  AuthErrors: {
+    TokenMissing: jest.fn().mockReturnValue({ message: 'No token, authorization denied' }),
+    TokenInvalid: jest.fn().mockReturnValue({ message: 'Token is not valid' }),
+    InsufficientRole: jest.fn().mockReturnValue({ message: 'Permission denied' }),
+  },
+  ServerErrors: {
+    MissingJwtSecret: jest.fn(),
+  },
+}));
+
 describe('Auth Middleware', () => {
   let mockRequest: Partial<Request & { user?: JwtPayload }>;
   let mockResponse: Partial<Response>;
@@ -17,13 +36,14 @@ describe('Auth Middleware', () => {
     mockRequest = {
       header: jest.fn(),
     };
-
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
     };
-
     mockNext = jest.fn();
+
+    // Mock environment variable
+    process.env.JWT_SECRET = 'test-secret';
 
     jest.clearAllMocks();
   });
@@ -31,34 +51,36 @@ describe('Auth Middleware', () => {
   describe('authMiddleware', () => {
     it('should call next() with valid token', () => {
       (mockRequest.header as jest.Mock).mockReturnValue('valid-token');
-
-      const mockPayload = { userId: 1, username: 'testuser', role: UserRole.USER };
+      const mockPayload = { userId: '1', username: 'testuser', role: UserRole.USER };
       (jwt.verify as jest.Mock).mockReturnValue(mockPayload);
 
       authMiddleware(mockRequest as Request, mockResponse as Response, mockNext as NextFunction);
 
       expect(mockRequest.header).toHaveBeenCalledWith('x-auth-token');
-      expect(jwt.verify).toHaveBeenCalledWith('valid-token', expect.any(String));
+      expect(jwt.verify).toHaveBeenCalledWith('valid-token', 'test-secret');
       expect(mockRequest.user).toEqual(mockPayload);
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith();
       expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should return 401 when no token is provided', () => {
+    it('should call next with error when no token is provided', () => {
       (mockRequest.header as jest.Mock).mockReturnValue(null);
 
       authMiddleware(mockRequest as Request, mockResponse as Response, mockNext as NextFunction);
 
       expect(mockRequest.header).toHaveBeenCalledWith('x-auth-token');
       expect(jwt.verify).not.toHaveBeenCalled();
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ message: 'No token, authorization denied' });
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 401,
+          message: 'No token, authorization denied',
+        })
+      );
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should return 401 when token is invalid', () => {
+    it('should call next with error when token is invalid', () => {
       (mockRequest.header as jest.Mock).mockReturnValue('invalid-token');
-
       (jwt.verify as jest.Mock).mockImplementation(() => {
         throw new Error('Token is invalid');
       });
@@ -66,10 +88,9 @@ describe('Auth Middleware', () => {
       authMiddleware(mockRequest as Request, mockResponse as Response, mockNext as NextFunction);
 
       expect(mockRequest.header).toHaveBeenCalledWith('x-auth-token');
-      expect(jwt.verify).toHaveBeenCalledWith('invalid-token', expect.any(String));
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Token is not valid' });
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(jwt.verify).toHaveBeenCalledWith('invalid-token', 'test-secret');
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
   });
 
@@ -83,32 +104,38 @@ describe('Auth Middleware', () => {
 
       middleware(mockRequest as Request, mockResponse as Response, mockNext as NextFunction);
 
-      expect(mockNext).toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith();
       expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should return 401 when user is not authenticated', () => {
+    it('should call next with error when user is not authenticated', () => {
       mockRequest.user = undefined;
-
       const middleware = authorizeRole([UserRole.USER]);
 
       middleware(mockRequest as Request, mockResponse as Response, mockNext as NextFunction);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(401);
-      expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Authorization denied' });
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 401,
+          message: 'No token, authorization denied',
+        })
+      );
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
 
-    it('should return 403 when user lacks required role', () => {
+    it('should call next with error when user lacks required role', () => {
       mockRequest.user = { userId: '1', username: 'testuser', role: UserRole.USER };
-
       const middleware = authorizeRole([UserRole.ADMIN]);
 
       middleware(mockRequest as Request, mockResponse as Response, mockNext as NextFunction);
 
-      expect(mockResponse.status).toHaveBeenCalledWith(403);
-      expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Permission denied' });
-      expect(mockNext).not.toHaveBeenCalled();
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 403,
+          message: 'Permission denied',
+        })
+      );
+      expect(mockResponse.status).not.toHaveBeenCalled();
     });
   });
 });

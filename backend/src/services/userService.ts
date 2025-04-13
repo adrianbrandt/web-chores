@@ -6,16 +6,14 @@ import { Errors } from '@/utils/AppError/AppError';
 import { AuthErrors, UserErrors, ValidationErrors, VerificationErrors } from '@/utils/errorCases/errorCases';
 import { JwtPayload, OtpMethod, OTPSendParams, UserProfileUpdateData } from '@/types';
 import logger from '@/config/logger';
+import { getJwtSecret } from '@/middleware/auth';
+import crypto from 'node:crypto';
 
 dotenv.config();
 
-const getJwtSecret = () => process.env.JWT_SECRET ?? '';
-
 const OTP_EXPIRY_MINUTES = 10;
 
-const generateOTP = (): string => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
+const generateOTP = (): string => crypto.randomInt(100000, 1000000).toString();
 
 const sendOTP = async ({ method, destination, otp }: OTPSendParams) => {
   if (method === 'email') {
