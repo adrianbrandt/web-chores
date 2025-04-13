@@ -54,18 +54,3 @@ export interface UpdateListItemData {
   priority?: Priority;
   dueDate?: Date;
 }
-
-export interface ListCompletionStats {
-  totalItems: number;
-  completedItems: number;
-  completionPercentage: number;
-  itemsByStatus: {
-    [key in ListItemStatus]: number;
-  };
-  userContributions?: {
-    userId: string;
-    completedItems: number;
-    completionPercentage: number;
-  }[];
-  lastCompletedAt?: Date;
-}

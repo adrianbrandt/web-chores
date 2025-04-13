@@ -1,7 +1,5 @@
-// src/types/serviceTypes.ts
 import { User, Group, List, ListItem, ListItemStatus } from '@/generated/client';
 
-// Base response for all services
 export interface ServiceResponse<T> {
   success: boolean;
   data?: T;
@@ -12,7 +10,6 @@ export interface ServiceResponse<T> {
   };
 }
 
-// User-related responses
 export type UserAuthResponse = ServiceResponse<{
   user: Partial<User>;
   token: string;
@@ -22,7 +19,6 @@ export type UserAuthResponse = ServiceResponse<{
 
 export type UserProfileResponse = ServiceResponse<Partial<User>>;
 
-// Group-related responses
 export type GroupResponse = ServiceResponse<Group>;
 export type GroupsListResponse = ServiceResponse<Group[]>;
 export type GroupMemberResponse = ServiceResponse<{
@@ -31,12 +27,10 @@ export type GroupMemberResponse = ServiceResponse<{
   role: string;
 }>;
 
-// List-related responses
 export type ListResponse = ServiceResponse<List>;
 export type ListsListResponse = ServiceResponse<List[]>;
 export type ListItemResponse = ServiceResponse<ListItem>;
 
-// Define specific type for stats to remove any
 export interface ListStats {
   totalItems: number;
   completedItems: number;

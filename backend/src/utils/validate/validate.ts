@@ -1,5 +1,5 @@
-import { Errors } from '../AppError/AppError';
-import { ValidationErrors } from '../errorCases/errorCases';
+import { Errors } from '@/utils/AppError';
+import { ValidationErrors } from '@/utils/errorCases';
 
 export interface ValidationResult {
   isValid: boolean;

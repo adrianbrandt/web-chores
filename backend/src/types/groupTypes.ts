@@ -12,8 +12,3 @@ export interface UpdateGroupData {
   description?: string;
   type?: GroupType;
 }
-
-export interface GroupMemberData {
-  userId: string;
-  role: GroupMemberRole;
-}

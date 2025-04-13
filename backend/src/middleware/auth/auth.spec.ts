@@ -42,7 +42,6 @@ describe('Auth Middleware', () => {
     };
     mockNext = jest.fn();
 
-    // Mock environment variable
     process.env.JWT_SECRET = 'test-secret';
 
     jest.clearAllMocks();

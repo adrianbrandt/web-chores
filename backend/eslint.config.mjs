@@ -1,4 +1,4 @@
-// eslint.config.mjs
+
 import globals from 'globals';
 import * as typescriptEslint from 'typescript-eslint';
 
