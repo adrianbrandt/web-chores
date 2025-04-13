@@ -4,8 +4,9 @@ import { GroupErrors } from '@/utils/errorCases';
 import { CreateGroupData, UpdateGroupData } from '@/types';
 import { GroupType, GroupMemberRole } from '@/generated/client';
 import { randomBytes } from 'crypto';
+import { GroupResponse, ServiceResponse, GroupsListResponse, GroupMemberResponse } from '@/types/serviceTypes';
 
-export const createGroup = async (context: AppContext, data: CreateGroupData) => {
+export const createGroup = async (context: AppContext, data: CreateGroupData): Promise<GroupResponse> => {
   const { name, description, type = GroupType.CUSTOM, createdById } = data;
 
   if (!name) {
@@ -14,7 +15,7 @@ export const createGroup = async (context: AppContext, data: CreateGroupData) =>
 
   const inviteCode = randomBytes(8).toString('hex');
 
-  return context.db.$transaction(async (tx) => {
+  const group = await context.db.$transaction(async (tx) => {
     const group = await tx.group.create({
       data: {
         name,
@@ -35,6 +36,12 @@ export const createGroup = async (context: AppContext, data: CreateGroupData) =>
 
     return group;
   });
+
+  return {
+    success: true,
+    data: group,
+    message: 'Group created successfully',
+  };
 };
 
 export const addGroupMember = async (
@@ -42,8 +49,8 @@ export const addGroupMember = async (
   groupId: string,
   userId: string,
   role: GroupMemberRole = GroupMemberRole.MEMBER
-) => {
-  return context.db.$transaction(async (tx) => {
+): Promise<GroupMemberResponse> => {
+  const member = await context.db.$transaction(async (tx) => {
     const group = await tx.group.findUnique({
       where: { id: groupId },
     });
@@ -73,6 +80,16 @@ export const addGroupMember = async (
       },
     });
   });
+
+  return {
+    success: true,
+    data: {
+      groupId: member.groupId,
+      userId: member.userId,
+      role: member.role,
+    },
+    message: 'Member added to group successfully',
+  };
 };
 
 export const removeGroupMember = async (
@@ -80,8 +97,8 @@ export const removeGroupMember = async (
   groupId: string,
   userId: string,
   removingUserId: string
-) => {
-  return context.db.$transaction(async (tx) => {
+): Promise<ServiceResponse<boolean>> => {
+  await context.db.$transaction(async (tx) => {
     const group = await tx.group.findUnique({
       where: { id: groupId },
     });
@@ -130,7 +147,7 @@ export const removeGroupMember = async (
       throw Errors.Forbidden(GroupErrors.InsufficientPermissions());
     }
 
-    return tx.groupMember.delete({
+    await tx.groupMember.delete({
       where: {
         groupId_userId: {
           groupId,
@@ -139,6 +156,12 @@ export const removeGroupMember = async (
       },
     });
   });
+
+  return {
+    success: true,
+    data: true,
+    message: 'Member removed from group successfully',
+  };
 };
 
 export const updateGroupDetails = async (
@@ -146,8 +169,8 @@ export const updateGroupDetails = async (
   groupId: string,
   updateData: UpdateGroupData,
   userId: string
-) => {
-  return context.db.$transaction(async (tx) => {
+): Promise<GroupResponse> => {
+  const updatedGroup = await context.db.$transaction(async (tx) => {
     const member = await tx.groupMember.findUnique({
       where: {
         groupId_userId: {
@@ -170,9 +193,15 @@ export const updateGroupDetails = async (
       },
     });
   });
+
+  return {
+    success: true,
+    data: updatedGroup,
+    message: 'Group details updated successfully',
+  };
 };
 
-export const getGroupById = async (context: AppContext, groupId: string) => {
+export const getGroupById = async (context: AppContext, groupId: string): Promise<GroupResponse> => {
   const group = await context.db.group.findUnique({
     where: { id: groupId },
     include: {
@@ -196,11 +225,14 @@ export const getGroupById = async (context: AppContext, groupId: string) => {
     throw Errors.NotFound(GroupErrors.NotFound());
   }
 
-  return group;
+  return {
+    success: true,
+    data: group,
+  };
 };
 
-export const listUserGroups = async (context: AppContext, userId: string) => {
-  return context.db.group.findMany({
+export const listUserGroups = async (context: AppContext, userId: string): Promise<GroupsListResponse> => {
+  const groups = await context.db.group.findMany({
     where: {
       members: {
         some: {
@@ -219,10 +251,19 @@ export const listUserGroups = async (context: AppContext, userId: string) => {
       },
     },
   });
+
+  return {
+    success: true,
+    data: groups,
+  };
 };
 
-export const generateGroupInviteCode = async (context: AppContext, groupId: string, userId: string) => {
-  return context.db.$transaction(async (tx) => {
+export const generateGroupInviteCode = async (
+  context: AppContext,
+  groupId: string,
+  userId: string
+): Promise<GroupResponse> => {
+  const group = await context.db.$transaction(async (tx) => {
     const member = await tx.groupMember.findUnique({
       where: {
         groupId_userId: {
@@ -243,4 +284,10 @@ export const generateGroupInviteCode = async (context: AppContext, groupId: stri
       data: { inviteCode: newInviteCode },
     });
   });
+
+  return {
+    success: true,
+    data: group,
+    message: 'Invite code regenerated successfully',
+  };
 };

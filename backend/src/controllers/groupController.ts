@@ -13,7 +13,7 @@ export const createGroup = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  const group = await groupService.createGroup(req.context, {
+  const result = await groupService.createGroup(req.context, {
     name,
     description,
     type,
@@ -21,13 +21,13 @@ export const createGroup = async (req: Request, res: Response) => {
   });
 
   logger.info('Group created successfully', {
-    groupId: group.id,
+    groupId: result.data?.id,
     createdBy: userId,
   });
 
   res.status(201).json({
-    message: 'Group created successfully',
-    group,
+    message: result.message,
+    group: result.data,
   });
 };
 
@@ -40,7 +40,7 @@ export const addGroupMember = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  await groupService.addGroupMember(req.context, groupId, memberToAddId, role || GroupMemberRole.MEMBER);
+  const result = await groupService.addGroupMember(req.context, groupId, memberToAddId, role || GroupMemberRole.MEMBER);
 
   logger.info('Member added to group', {
     groupId,
@@ -49,7 +49,8 @@ export const addGroupMember = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
-    message: 'Member added to group successfully',
+    message: result.message,
+    member: result.data,
   });
 };
 
@@ -61,7 +62,7 @@ export const removeGroupMember = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  await groupService.removeGroupMember(req.context, groupId, memberId, userId);
+  const result = await groupService.removeGroupMember(req.context, groupId, memberId, userId);
 
   logger.info('Member removed from group', {
     groupId,
@@ -70,7 +71,7 @@ export const removeGroupMember = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
-    message: 'Member removed from group successfully',
+    message: result.message,
   });
 };
 
@@ -83,7 +84,7 @@ export const updateGroupDetails = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  const updatedGroup = await groupService.updateGroupDetails(req.context, groupId, { name, description, type }, userId);
+  const result = await groupService.updateGroupDetails(req.context, groupId, { name, description, type }, userId);
 
   logger.info('Group details updated', {
     groupId,
@@ -91,8 +92,8 @@ export const updateGroupDetails = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
-    message: 'Group details updated successfully',
-    group: updatedGroup,
+    message: result.message,
+    group: result.data,
   });
 };
 
@@ -104,9 +105,9 @@ export const getGroup = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  const group = await groupService.getGroupById(req.context, groupId);
+  const result = await groupService.getGroupById(req.context, groupId);
 
-  res.status(200).json(group);
+  res.status(200).json(result.data);
 };
 
 export const listUserGroups = async (req: Request, res: Response) => {
@@ -116,9 +117,9 @@ export const listUserGroups = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  const groups = await groupService.listUserGroups(req.context, userId);
+  const result = await groupService.listUserGroups(req.context, userId);
 
-  res.status(200).json(groups);
+  res.status(200).json(result.data);
 };
 
 export const generateInviteCode = async (req: Request, res: Response) => {
@@ -129,7 +130,7 @@ export const generateInviteCode = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(GroupErrors.InsufficientPermissions());
   }
 
-  const group = await groupService.generateGroupInviteCode(req.context, groupId, userId);
+  const result = await groupService.generateGroupInviteCode(req.context, groupId, userId);
 
   logger.info('Group invite code regenerated', {
     groupId,
@@ -137,7 +138,7 @@ export const generateInviteCode = async (req: Request, res: Response) => {
   });
 
   res.status(200).json({
-    message: 'Invite code regenerated successfully',
-    inviteCode: group.inviteCode,
+    message: result.message,
+    inviteCode: result.data?.inviteCode,
   });
 };

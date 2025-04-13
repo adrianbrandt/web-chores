@@ -31,7 +31,7 @@ describe('resendVerificationCode', () => {
         verificationExpires: expect.any(Date),
       },
     });
-    expect(result).toBe(true);
+    expect(result.data).toBe(true);
   });
 
   it('should resend verification code successfully with phone number', async () => {
@@ -59,7 +59,7 @@ describe('resendVerificationCode', () => {
         verificationExpires: expect.any(Date),
       },
     });
-    expect(result).toBe(true);
+    expect(result.data).toBe(true);
   });
 
   it('should throw error if user does not exist', async () => {

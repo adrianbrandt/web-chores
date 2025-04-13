@@ -5,9 +5,11 @@ import dotenv from 'dotenv';
 import { Errors } from '@/utils/AppError/AppError';
 import { AuthErrors, UserErrors, ValidationErrors, VerificationErrors } from '@/utils/errorCases/errorCases';
 import { JwtPayload, OtpMethod, OTPSendParams, UserProfileUpdateData } from '@/types';
+import { UserAuthResponse, UserProfileResponse, ServiceResponse } from '@/types/serviceTypes';
 import logger from '@/config/logger';
 import { getJwtSecret } from '@/middleware/auth';
 import crypto from 'node:crypto';
+import { User } from '@/generated/client';
 
 dotenv.config();
 
@@ -15,7 +17,7 @@ const OTP_EXPIRY_MINUTES = 10;
 
 const generateOTP = (): string => crypto.randomInt(100000, 1000000).toString();
 
-const sendOTP = async ({ method, destination, otp }: OTPSendParams) => {
+const sendOTP = async ({ method, destination, otp }: OTPSendParams): Promise<boolean> => {
   if (method === 'email') {
     logger.info(`[EMAIL OTP] To: ${destination}, Code: ${otp}`);
   } else {
@@ -37,7 +39,7 @@ export const registerUser = async (
     phoneNumber?: string;
     password: string;
   }
-) => {
+): Promise<UserAuthResponse> => {
   const { name, username, email, phoneNumber, password } = userData;
 
   if (!name || !username || !password || (!email && !phoneNumber)) {
@@ -87,13 +89,21 @@ export const registerUser = async (
   const token = generateToken(payload);
 
   return {
-    user,
-    token,
-    needsVerification: true,
+    success: true,
+    data: {
+      user,
+      token,
+      needsVerification: true,
+    },
+    message: 'User registered successfully',
   };
 };
 
-export const loginUser = async (context: AppContext, identifier: string, password: string) => {
+export const loginUser = async (
+  context: AppContext,
+  identifier: string,
+  password: string
+): Promise<UserAuthResponse> => {
   if (!identifier || !password) {
     throw Errors.BadRequest(ValidationErrors.MissingRequired('Please provide username/email/phone and password'));
   }
@@ -131,13 +141,21 @@ export const loginUser = async (context: AppContext, identifier: string, passwor
   const token = generateToken(payload);
 
   return {
-    user,
-    token,
-    isVerified: user.isVerified,
+    success: true,
+    data: {
+      user,
+      token,
+      isVerified: user.isVerified,
+    },
+    message: 'Login successful',
   };
 };
 
-export const verifyUserAccount = async (context: AppContext, userId: string, otp: string) => {
+export const verifyUserAccount = async (
+  context: AppContext,
+  userId: string,
+  otp: string
+): Promise<ServiceResponse<User>> => {
   if (!otp) {
     throw Errors.BadRequest(VerificationErrors.MissingCode());
   }
@@ -162,7 +180,7 @@ export const verifyUserAccount = async (context: AppContext, userId: string, otp
     throw Errors.BadRequest(VerificationErrors.CodeExpired());
   }
 
-  return context.db.user.update({
+  const updatedUser = await context.db.user.update({
     where: { id: userId },
     data: {
       isVerified: true,
@@ -170,9 +188,18 @@ export const verifyUserAccount = async (context: AppContext, userId: string, otp
       verificationExpires: null,
     },
   });
+
+  return {
+    success: true,
+    data: updatedUser,
+    message: 'Account verified successfully',
+  };
 };
 
-export const resendVerificationCode = async (context: AppContext, userId: string) => {
+export const resendVerificationCode = async (
+  context: AppContext,
+  userId: string
+): Promise<ServiceResponse<boolean>> => {
   const user = await context.db.user.findUnique({
     where: { id: userId },
   });
@@ -202,10 +229,17 @@ export const resendVerificationCode = async (context: AppContext, userId: string
     await sendOTP({ method: OtpMethod.SMS, destination: user.phoneNumber, otp });
   }
 
-  return true;
+  return {
+    success: true,
+    data: true,
+    message: 'Verification code resent successfully',
+  };
 };
 
-export const requestPasswordResetToken = async (context: AppContext, identifier: string) => {
+export const requestPasswordResetToken = async (
+  context: AppContext,
+  identifier: string
+): Promise<ServiceResponse<boolean>> => {
   if (!identifier) {
     throw Errors.BadRequest(VerificationErrors.MissingIdentifier());
   }
@@ -217,7 +251,11 @@ export const requestPasswordResetToken = async (context: AppContext, identifier:
   });
 
   if (!user) {
-    return true;
+    return {
+      success: true,
+      data: true,
+      message: 'If the account exists, a reset code has been sent',
+    };
   }
 
   const otp = generateOTP();
@@ -237,7 +275,11 @@ export const requestPasswordResetToken = async (context: AppContext, identifier:
     await sendOTP({ method: OtpMethod.SMS, destination: user.phoneNumber, otp });
   }
 
-  return true;
+  return {
+    success: true,
+    data: true,
+    message: 'If the account exists, a reset code has been sent',
+  };
 };
 
 export const resetUserPassword = async (
@@ -245,7 +287,7 @@ export const resetUserPassword = async (
   identifier: string,
   token: string,
   newPassword: string
-) => {
+): Promise<ServiceResponse<User>> => {
   if (!identifier || !token || !newPassword) {
     throw Errors.BadRequest(ValidationErrors.MissingRequired('Please provide all required fields'));
   }
@@ -271,7 +313,7 @@ export const resetUserPassword = async (
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  return context.db.user.update({
+  const updatedUser = await context.db.user.update({
     where: { id: user.id },
     data: {
       password: hashedPassword,
@@ -279,9 +321,15 @@ export const resetUserPassword = async (
       passwordResetExpires: null,
     },
   });
+
+  return {
+    success: true,
+    data: updatedUser,
+    message: 'Password has been reset successfully',
+  };
 };
 
-export const getUserProfile = async (context: AppContext, userId: string) => {
+export const getUserProfile = async (context: AppContext, userId: string): Promise<UserProfileResponse> => {
   const user = await context.db.user.findUnique({
     where: { id: userId },
     select: {
@@ -304,10 +352,17 @@ export const getUserProfile = async (context: AppContext, userId: string) => {
     throw Errors.NotFound(UserErrors.NotFound());
   }
 
-  return user;
+  return {
+    success: true,
+    data: user,
+  };
 };
 
-export const updateUserProfile = async (context: AppContext, userId: string, profileData: UserProfileUpdateData) => {
+export const updateUserProfile = async (
+  context: AppContext,
+  userId: string,
+  profileData: UserProfileUpdateData
+): Promise<UserProfileResponse> => {
   const { username, email, phoneNumber } = profileData;
 
   if (username || email || phoneNumber) {
@@ -331,7 +386,7 @@ export const updateUserProfile = async (context: AppContext, userId: string, pro
 
   const updateData = Object.fromEntries(Object.entries(profileData).filter(([_, value]) => value !== undefined));
 
-  return context.db.user.update({
+  const updatedUser = await context.db.user.update({
     where: { id: userId },
     data: updateData,
     select: {
@@ -349,6 +404,12 @@ export const updateUserProfile = async (context: AppContext, userId: string, pro
       updatedAt: true,
     },
   });
+
+  return {
+    success: true,
+    data: updatedUser,
+    message: 'Profile updated successfully',
+  };
 };
 
 export const changeUserPassword = async (
@@ -356,7 +417,7 @@ export const changeUserPassword = async (
   userId: string,
   currentPassword: string,
   newPassword: string
-) => {
+): Promise<ServiceResponse<boolean>> => {
   if (!currentPassword || !newPassword) {
     throw Errors.BadRequest(ValidationErrors.MissingRequired('Please provide current and new password'));
   }
@@ -382,5 +443,9 @@ export const changeUserPassword = async (
     data: { password: hashedPassword },
   });
 
-  return true;
+  return {
+    success: true,
+    data: true,
+    message: 'Password changed successfully',
+  };
 };

@@ -1,9 +1,28 @@
 import { AppContext } from '@/context';
-import { UserRole, AccountStatus } from '@/generated/client';
+import { UserRole, AccountStatus, User } from '@/generated/client';
 import { Errors } from '@/utils/AppError';
 import { UserErrors } from '@/utils/errorCases';
+import { ServiceResponse } from '@/types/serviceTypes';
 
-export const getAllUsers = async (context: AppContext) => {
+type PartialUserWithId = Pick<User, 'id' | 'username' | 'accountStatus'>;
+type PartialUserWithRole = Pick<User, 'id' | 'username' | 'role'>;
+
+type AdminUserResult = Pick<
+  User,
+  | 'id'
+  | 'name'
+  | 'username'
+  | 'email'
+  | 'phoneNumber'
+  | 'isVerified'
+  | 'accountStatus'
+  | 'role'
+  | 'lastLogin'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+export const getAllUsers = async (context: AppContext): Promise<AdminUserResult[]> => {
   return context.db.user.findMany({
     select: {
       id: true,
@@ -21,7 +40,7 @@ export const getAllUsers = async (context: AppContext) => {
   });
 };
 
-export const getUserByUsername = async (context: AppContext, username: string) => {
+export const getUserByUsername = async (context: AppContext, username: string): Promise<AdminUserResult> => {
   const user = await context.db.user.findUnique({
     where: { username },
     select: {
@@ -45,7 +64,11 @@ export const getUserByUsername = async (context: AppContext, username: string) =
   return user;
 };
 
-export const updateUserStatus = async (context: AppContext, username: string, status: AccountStatus) => {
+export const updateUserStatus = async (
+  context: AppContext,
+  username: string,
+  status: AccountStatus
+): Promise<PartialUserWithId> => {
   if (!username) {
     throw Errors.BadRequest(UserErrors.InvalidName());
   }
@@ -69,7 +92,11 @@ export const updateUserStatus = async (context: AppContext, username: string, st
   });
 };
 
-export const updateUserRole = async (context: AppContext, username: string, role: UserRole) => {
+export const updateUserRole = async (
+  context: AppContext,
+  username: string,
+  role: UserRole
+): Promise<PartialUserWithRole> => {
   if (!username) {
     throw Errors.BadRequest(UserErrors.InvalidName());
   }
@@ -93,7 +120,7 @@ export const updateUserRole = async (context: AppContext, username: string, role
   });
 };
 
-export const deleteUser = async (context: AppContext, username: string) => {
+export const deleteUser = async (context: AppContext, username: string): Promise<ServiceResponse<boolean>> => {
   if (!username) {
     throw Errors.BadRequest(UserErrors.InvalidName());
   }
@@ -106,5 +133,9 @@ export const deleteUser = async (context: AppContext, username: string) => {
   await context.db.user.delete({
     where: { id: user.id },
   });
-  return true;
+  return {
+    success: true,
+    data: true,
+    message: 'User deleted successfully',
+  };
 };

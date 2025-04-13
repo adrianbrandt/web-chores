@@ -1,11 +1,9 @@
 import { setupMockWinston, mockLoggerInstance } from '@/tests/mocks/mockWinston';
-import { originalEnv } from '@/tests/setup';
 
 jest.mock('winston');
 
 describe('Logger Configuration', () => {
   beforeEach(() => {
-    process.env = { ...originalEnv };
     jest.clearAllMocks();
   });
 

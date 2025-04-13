@@ -11,14 +11,14 @@ export const register = async (req: Request, res: Response) => {
   const result = await userService.registerUser(req.context, userData);
 
   logger.info('User registered successfully', {
-    userId: result.user.id,
-    username: result.user.username,
+    userId: result.data?.user.id,
+    username: result.data?.user.username,
   });
 
   res.status(201).json({
-    message: 'User registered successfully',
-    token: result.token,
-    needsVerification: result.needsVerification,
+    message: result.message,
+    token: result.data?.token,
+    needsVerification: result.data?.needsVerification,
   });
 };
 
@@ -28,14 +28,14 @@ export const login = async (req: Request, res: Response) => {
   const result = await userService.loginUser(req.context, identifier, password);
 
   logger.info('User logged in successfully', {
-    userId: result.user.id,
-    username: result.user.username,
+    userId: result.data?.user.id,
+    username: result.data?.user.username,
   });
 
   res.json({
-    message: 'Login successful',
-    token: result.token,
-    isVerified: result.isVerified,
+    message: result.message,
+    token: result.data?.token,
+    isVerified: result.data?.isVerified,
   });
 };
 
@@ -47,9 +47,9 @@ export const verifyAccount = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(AuthErrors.TokenMissing());
   }
 
-  await userService.verifyUserAccount(req.context, userId, otp);
+  const result = await userService.verifyUserAccount(req.context, userId, otp);
 
-  res.json({ message: 'Account verified successfully' });
+  res.json({ message: result.message });
 };
 
 export const resendVerification = async (req: Request, res: Response) => {
@@ -59,25 +59,25 @@ export const resendVerification = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(AuthErrors.TokenMissing());
   }
 
-  await userService.resendVerificationCode(req.context, userId);
+  const result = await userService.resendVerificationCode(req.context, userId);
 
-  res.json({ message: 'Verification code resent successfully' });
+  res.json({ message: result.message });
 };
 
 export const requestPasswordReset = async (req: Request, res: Response) => {
   const { identifier } = req.body;
 
-  await userService.requestPasswordResetToken(req.context, identifier);
+  const result = await userService.requestPasswordResetToken(req.context, identifier);
 
-  res.json({ message: 'If the account exists, a reset code has been sent' });
+  res.json({ message: result.message });
 };
 
 export const resetPassword = async (req: Request, res: Response) => {
   const { identifier, token, newPassword } = req.body;
 
-  await userService.resetUserPassword(req.context, identifier, token, newPassword);
+  const result = await userService.resetUserPassword(req.context, identifier, token, newPassword);
 
-  res.json({ message: 'Password has been reset successfully' });
+  res.json({ message: result.message });
 };
 
 export const getProfile = async (req: Request, res: Response) => {
@@ -87,9 +87,9 @@ export const getProfile = async (req: Request, res: Response) => {
     throw Errors.Unauthorized(AuthErrors.TokenMissing());
   }
 
-  const user = await userService.getUserProfile(req.context, userId);
+  const result = await userService.getUserProfile(req.context, userId);
 
-  res.json(user);
+  res.json(result.data);
 };
 
 export const updateProfile = async (req: Request, res: Response) => {
@@ -101,11 +101,11 @@ export const updateProfile = async (req: Request, res: Response) => {
 
   const profileData = req.body;
 
-  const updatedUser = await userService.updateUserProfile(req.context, userId, profileData);
+  const result = await userService.updateUserProfile(req.context, userId, profileData);
 
   res.json({
-    message: 'Profile updated successfully',
-    user: updatedUser,
+    message: result.message,
+    user: result.data,
   });
 };
 
@@ -118,7 +118,7 @@ export const changePassword = async (req: Request, res: Response) => {
 
   const { currentPassword, newPassword } = req.body;
 
-  await userService.changeUserPassword(req.context, userId, currentPassword, newPassword);
+  const result = await userService.changeUserPassword(req.context, userId, currentPassword, newPassword);
 
-  res.json({ message: 'Password changed successfully' });
+  res.json({ message: result.message });
 };

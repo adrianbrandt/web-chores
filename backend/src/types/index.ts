@@ -1,6 +1,7 @@
 export * from './jwtTypes';
 export * from './groupTypes';
 export * from './listTypes';
+export * from './serviceTypes';
 
 export enum OtpMethod {
   EMAIL = 'email',

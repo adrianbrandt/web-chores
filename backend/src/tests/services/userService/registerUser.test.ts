@@ -18,7 +18,7 @@ describe('registerUser', () => {
     const createdUser = createMockUser();
     mockCtx.db.user.create.mockResolvedValue(createdUser);
 
-    const result = await userService.registerUser(ctx, userData);
+    const { data: result } = await userService.registerUser(ctx, userData);
 
     expect(mockCtx.db.user.findFirst).toHaveBeenCalledWith({
       where: {
@@ -69,7 +69,7 @@ describe('registerUser', () => {
     });
     mockCtx.db.user.create.mockResolvedValue(createdUser);
 
-    const result = await userService.registerUser(ctx, userData);
+    const { data: result } = await userService.registerUser(ctx, userData);
 
     expect(mockCtx.db.user.findFirst).toHaveBeenCalledWith({
       where: {

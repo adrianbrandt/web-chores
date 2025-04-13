@@ -15,7 +15,7 @@ describe('updateUserProfile', () => {
 
     mockCtx.db.user.update.mockResolvedValue(createMockPrismaResponse<User>(updatedProfile));
 
-    const result = await userService.updateUserProfile(ctx, '1', profileData);
+    const { data: result } = await userService.updateUserProfile(ctx, '1', profileData);
 
     expect(mockCtx.db.user.findFirst).toHaveBeenCalledWith({
       where: {
@@ -40,7 +40,7 @@ describe('updateUserProfile', () => {
     const updatedProfile = createMockUser({ id: '1', phoneNumber: '+19876543210' });
     mockCtx.db.user.update.mockResolvedValue(createMockPrismaResponse<User>(updatedProfile));
 
-    const result = await userService.updateUserProfile(ctx, '1', profileData);
+    const { data: result } = await userService.updateUserProfile(ctx, '1', profileData);
 
     expect(mockCtx.db.user.findFirst).toHaveBeenCalledWith({
       where: {
@@ -64,7 +64,7 @@ describe('updateUserProfile', () => {
     const updatedProfile = createMockUser({ id: '1', avatarUrl: 'https://example.com/avatar.png' });
     mockCtx.db.user.update.mockResolvedValue(createMockPrismaResponse<User>(updatedProfile));
 
-    const result = await userService.updateUserProfile(ctx, '1', profileData);
+    const { data: result } = await userService.updateUserProfile(ctx, '1', profileData);
 
     expect(mockCtx.db.user.findFirst).not.toHaveBeenCalled();
     expect(mockCtx.db.user.update).toHaveBeenCalledWith({

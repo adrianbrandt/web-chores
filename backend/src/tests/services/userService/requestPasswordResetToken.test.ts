@@ -30,7 +30,7 @@ describe('requestPasswordResetToken', () => {
   it('should return success even if user does not exist (for security)', async () => {
     mockCtx.db.user.findFirst.mockResolvedValue(null);
 
-    const result = await userService.requestPasswordResetToken(ctx, 'nonexistent@example.com');
+    const { data: result } = await userService.requestPasswordResetToken(ctx, 'nonexistent@example.com');
 
     expect(result).toBe(true);
     expect(mockCtx.db.user.update).not.toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe('requestPasswordResetToken', () => {
     });
     mockCtx.db.user.findFirst.mockResolvedValue(user);
 
-    const result = await userService.requestPasswordResetToken(ctx, 'username');
+    const { data: result } = await userService.requestPasswordResetToken(ctx, 'username');
 
     expect(mockCtx.db.user.update).toHaveBeenCalledWith({
       where: { id: user.id },

@@ -12,7 +12,7 @@ describe('loginUser', () => {
     const mockUser = createMockUser();
     mockCtx.db.user.findFirst.mockResolvedValue(mockUser);
 
-    const result = await userService.loginUser(ctx, 'testuser', 'Password123');
+    const { data: result } = await userService.loginUser(ctx, 'testuser', 'Password123');
 
     expect(mockCtx.db.user.findFirst).toHaveBeenCalledWith({
       where: {

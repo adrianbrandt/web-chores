@@ -182,7 +182,7 @@ describe('Admin Service', () => {
       mockCtx.db.user.findUnique.mockResolvedValue(mockUser);
       mockCtx.db.user.delete.mockResolvedValue(mockUser);
 
-      const result = await adminService.deleteUser(ctx, 'testuser');
+      const { data: result } = await adminService.deleteUser(ctx, 'testuser');
 
       expect(mockCtx.db.user.findUnique).toHaveBeenCalledWith({
         where: { username: 'testuser' },

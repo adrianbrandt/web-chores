@@ -83,12 +83,12 @@ export const deleteUser = async (req: Request, res: Response) => {
     throw Errors.BadRequest(UserErrors.InvalidName());
   }
 
-  await adminService.deleteUser(req.context, username);
+  const result = await adminService.deleteUser(req.context, username);
 
   logger.info('Admin deleted user', {
     adminId: req.user?.userId,
     targetUsername: username,
   });
 
-  res.json({ message: 'User deleted successfully' });
+  res.json({ message: result.message });
 };

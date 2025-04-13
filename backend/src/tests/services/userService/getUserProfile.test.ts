@@ -11,7 +11,7 @@ describe('getUserProfile', () => {
     const userProfile = createMockUser();
     mockCtx.db.user.findUnique.mockResolvedValue(createMockPrismaResponse<User>(userProfile));
 
-    const result = await userService.getUserProfile(ctx, '1');
+    const { data: result } = await userService.getUserProfile(ctx, '1');
 
     expect(mockCtx.db.user.findUnique).toHaveBeenCalledWith({
       where: { id: '1' },

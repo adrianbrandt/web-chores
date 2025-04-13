@@ -1,18 +1,26 @@
 import { AppContext } from '@/context';
 import { Errors } from '@/utils/AppError';
 import { ListErrors } from '@/utils/errorCases';
-import { CreateListData, UpdateListData, CreateListItemData, UpdateListItemData, ListCompletionStats } from '@/types';
+import { CreateListData, UpdateListData, CreateListItemData, UpdateListItemData } from '@/types';
 import { ListCollaboratorRole, ListItemStatus, ListType, RecurrenceFrequency } from '@/generated/client';
 import { checkListItem } from '@/utils/listUtils';
+import {
+  ListResponse,
+  ListsListResponse,
+  ListItemResponse,
+  ServiceResponse,
+  ListStatsResponse,
+  ListStats,
+} from '@/types/serviceTypes';
 
-export const createList = async (context: AppContext, data: CreateListData) => {
+export const createList = async (context: AppContext, data: CreateListData): Promise<ListResponse> => {
   const { name, type, description, isShared, groupId, ownerId, recurrence, collaborators } = data;
 
   if (!name || !type || !ownerId) {
     throw Errors.BadRequest(ListErrors.MissingRequiredFields());
   }
 
-  return context.db.$transaction(async (tx) => {
+  const list = await context.db.$transaction(async (tx) => {
     const list = await tx.list.create({
       data: {
         name,
@@ -50,10 +58,21 @@ export const createList = async (context: AppContext, data: CreateListData) => {
 
     return list;
   });
+
+  return {
+    success: true,
+    data: list,
+    message: 'List created successfully',
+  };
 };
 
-export const updateList = async (context: AppContext, listId: string, data: UpdateListData, userId: string) => {
-  return context.db.$transaction(async (tx) => {
+export const updateList = async (
+  context: AppContext,
+  listId: string,
+  data: UpdateListData,
+  userId: string
+): Promise<ListResponse> => {
+  const updatedList = await context.db.$transaction(async (tx) => {
     const collaborator = await tx.listCollaborator.findUnique({
       where: {
         listId_userId: {
@@ -110,10 +129,20 @@ export const updateList = async (context: AppContext, listId: string, data: Upda
 
     return updatedList;
   });
+
+  return {
+    success: true,
+    data: updatedList,
+    message: 'List updated successfully',
+  };
 };
 
-export const deleteList = async (context: AppContext, listId: string, userId: string) => {
-  return context.db.$transaction(async (tx) => {
+export const deleteList = async (
+  context: AppContext,
+  listId: string,
+  userId: string
+): Promise<ServiceResponse<boolean>> => {
+  await context.db.$transaction(async (tx) => {
     const list = await tx.list.findUnique({
       where: { id: listId },
     });
@@ -134,6 +163,12 @@ export const deleteList = async (context: AppContext, listId: string, userId: st
       },
     });
   });
+
+  return {
+    success: true,
+    data: true,
+    message: 'List deleted successfully',
+  };
 };
 
 export const addListCollaborator = async (
@@ -142,8 +177,14 @@ export const addListCollaborator = async (
   collaboratorId: string,
   role: ListCollaboratorRole,
   addedById: string
-) => {
-  return context.db.$transaction(async (tx) => {
+): Promise<
+  ServiceResponse<{
+    listId: string;
+    userId: string;
+    role: ListCollaboratorRole;
+  }>
+> => {
+  const collaborator = await context.db.$transaction(async (tx) => {
     const list = await tx.list.findUnique({
       where: { id: listId },
     });
@@ -191,6 +232,16 @@ export const addListCollaborator = async (
       },
     });
   });
+
+  return {
+    success: true,
+    data: {
+      listId: collaborator.listId,
+      userId: collaborator.userId,
+      role: collaborator.role,
+    },
+    message: 'Collaborator added successfully',
+  };
 };
 
 export const removeListCollaborator = async (
@@ -198,8 +249,8 @@ export const removeListCollaborator = async (
   listId: string,
   collaboratorId: string,
   removedById: string
-) => {
-  return context.db.$transaction(async (tx) => {
+): Promise<ServiceResponse<boolean>> => {
+  await context.db.$transaction(async (tx) => {
     const list = await tx.list.findUnique({
       where: { id: listId },
     });
@@ -233,10 +284,21 @@ export const removeListCollaborator = async (
       },
     });
   });
+
+  return {
+    success: true,
+    data: true,
+    message: 'Collaborator removed successfully',
+  };
 };
 
-export const createListItem = async (context: AppContext, listId: string, data: CreateListItemData, userId: string) => {
-  return context.db.$transaction(async (tx) => {
+export const createListItem = async (
+  context: AppContext,
+  listId: string,
+  data: CreateListItemData,
+  userId: string
+): Promise<ListItemResponse> => {
+  const listItem = await context.db.$transaction(async (tx) => {
     const list = await tx.list.findUnique({
       where: { id: listId },
       include: {
@@ -273,6 +335,12 @@ export const createListItem = async (context: AppContext, listId: string, data: 
       },
     });
   });
+
+  return {
+    success: true,
+    data: listItem,
+    message: 'List item created successfully',
+  };
 };
 
 export const updateListItem = async (
@@ -280,17 +348,23 @@ export const updateListItem = async (
   listItemId: string,
   data: UpdateListItemData,
   userId: string
-) => {
-  return context.db.$transaction(async (tx) => {
+): Promise<ServiceResponse<boolean>> => {
+  await context.db.$transaction(async (tx) => {
     await checkListItem(tx, listItemId, userId);
 
     await tx.listItem.delete({
       where: { id: listItemId },
     });
   });
+
+  return {
+    success: true,
+    data: true,
+    message: 'List item updated successfully',
+  };
 };
 
-export const getListById = async (context: AppContext, listId: string, userId: string) => {
+export const getListById = async (context: AppContext, listId: string, userId: string): Promise<ListResponse> => {
   const list = await context.db.list.findUnique({
     where: {
       id: listId,
@@ -326,7 +400,10 @@ export const getListById = async (context: AppContext, listId: string, userId: s
     throw Errors.NotFound(ListErrors.NotFound());
   }
 
-  return list;
+  return {
+    success: true,
+    data: list,
+  };
 };
 
 export const getUserLists = async (
@@ -336,8 +413,8 @@ export const getUserLists = async (
     type?: ListType;
     groupId?: string;
   }
-) => {
-  return context.db.list.findMany({
+): Promise<ListsListResponse> => {
+  const lists = await context.db.list.findMany({
     where: {
       OR: [
         { ownerId: userId },
@@ -358,9 +435,14 @@ export const getUserLists = async (
       collaborators: true,
     },
   });
+
+  return {
+    success: true,
+    data: lists,
+  };
 };
 
-export const getListCompletionStats = async (context: AppContext, listId: string): Promise<ListCompletionStats> => {
+export const getListCompletionStats = async (context: AppContext, listId: string): Promise<ListStatsResponse> => {
   const list = await context.db.list.findUnique({
     where: { id: listId },
     include: {
@@ -406,7 +488,7 @@ export const getListCompletionStats = async (context: AppContext, listId: string
     .filter((item) => item.status === ListItemStatus.COMPLETED && item.completedAt)
     .sort((a, b) => (b.completedAt?.getTime() || 0) - (a.completedAt?.getTime() || 0));
 
-  return {
+  const stats: ListStats = {
     totalItems,
     completedItems,
     completionPercentage: (completedItems / totalItems) * 100 || 0,
@@ -420,9 +502,14 @@ export const getListCompletionStats = async (context: AppContext, listId: string
     userContributions,
     lastCompletedAt: completedItemsSorted.length > 0 ? completedItemsSorted[0].completedAt! : undefined,
   };
+
+  return {
+    success: true,
+    data: stats,
+  };
 };
 
-export const regenerateRecurringLists = async (context: AppContext) => {
+export const regenerateRecurringLists = async (context: AppContext): Promise<ServiceResponse<boolean>> => {
   const recurringLists = await context.db.listRecurrence.findMany({
     where: {
       AND: [
@@ -465,4 +552,10 @@ export const regenerateRecurringLists = async (context: AppContext) => {
       });
     });
   }
+
+  return {
+    success: true,
+    data: true,
+    message: 'Recurring lists regenerated successfully',
+  };
 };

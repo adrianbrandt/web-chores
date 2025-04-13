@@ -1,5 +1,5 @@
 // src/types/serviceTypes.ts
-import { User, Group, List, ListItem } from '@/generated/client';
+import { User, Group, List, ListItem, ListItemStatus } from '@/generated/client';
 
 // Base response for all services
 export interface ServiceResponse<T> {
@@ -13,34 +13,41 @@ export interface ServiceResponse<T> {
 }
 
 // User-related responses
-export interface UserAuthResponse
-  extends ServiceResponse<{
-    user: Partial<User>;
-    token: string;
-    isVerified?: boolean;
-    needsVerification?: boolean;
-  }> {}
+export type UserAuthResponse = ServiceResponse<{
+  user: Partial<User>;
+  token: string;
+  isVerified?: boolean;
+  needsVerification?: boolean;
+}>;
 
-export interface UserProfileResponse extends ServiceResponse<Partial<User>> {}
+export type UserProfileResponse = ServiceResponse<Partial<User>>;
 
 // Group-related responses
-export interface GroupResponse extends ServiceResponse<Group> {}
-export interface GroupsListResponse extends ServiceResponse<Group[]> {}
-export interface GroupMemberResponse
-  extends ServiceResponse<{
-    groupId: string;
-    userId: string;
-    role: string;
-  }> {}
+export type GroupResponse = ServiceResponse<Group>;
+export type GroupsListResponse = ServiceResponse<Group[]>;
+export type GroupMemberResponse = ServiceResponse<{
+  groupId: string;
+  userId: string;
+  role: string;
+}>;
 
 // List-related responses
-export interface ListResponse extends ServiceResponse<List> {}
-export interface ListsListResponse extends ServiceResponse<List[]> {}
-export interface ListItemResponse extends ServiceResponse<ListItem> {}
-export interface ListStatsResponse
-  extends ServiceResponse<{
-    totalItems: number;
+export type ListResponse = ServiceResponse<List>;
+export type ListsListResponse = ServiceResponse<List[]>;
+export type ListItemResponse = ServiceResponse<ListItem>;
+
+// Define specific type for stats to remove any
+export interface ListStats {
+  totalItems: number;
+  completedItems: number;
+  completionPercentage: number;
+  itemsByStatus: Record<ListItemStatus, number>;
+  userContributions?: Array<{
+    userId: string;
     completedItems: number;
     completionPercentage: number;
-    [key: string]: any;
-  }> {}
+  }>;
+  lastCompletedAt?: Date;
+}
+
+export type ListStatsResponse = ServiceResponse<ListStats>;
