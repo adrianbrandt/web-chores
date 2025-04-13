@@ -4,3 +4,4 @@ generated
 coverage
 dist
 logs
+package-lock.json
